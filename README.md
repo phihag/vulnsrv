@@ -3,7 +3,7 @@ vulnsrv is a web applications that allows students to exploit various common sec
 All vulnerabilities are only simulated; vulnsrv is intended to be 100% safe. However, vulnsrv may contain bugs and security vulnerabilities, like every other program.
 Note that vulnsrv reproduces user-supplied content, which can be rude/in violation of local laws restricting speech. By default, it accepts only connections from the local machine. Due to the simulated security vulnerabilities, vulnsrv must not be mapped in(proxied) in a regular domain, as doing so would expose the domain and super-domains to Cross-Site Scripting vulnerabilties.
 
-vulnsrv was originally written to provide excercises for a [German computer security lecture](http://www.cn.uni-duesseldorf.de/teaching/sose11/netsec). It is intended as an easy-to-use and simplified alternative to [Google Gruyere](http://google-gruyere.appspot.com/).
+vulnsrv was originally written to provide excercises for a [German computer security lecture](http://www.cn.uni-duesseldorf.de/teaching/sose11/netsec). vulnsrv is intended to be easier to use and simpler than [Google Gruyere](http://google-gruyere.appspot.com/), and used in an educational context.
 
 # Running vulnsrv
 
