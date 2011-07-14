@@ -21,4 +21,4 @@ For the user, any web browser (although a modern web browser that includes devel
 
 # Developing vulnsrv
 
-Development goals in the near future are [**translation**](https://github.com/phihag/vulnsrv/issues/3) and a [service mode](https://github.com/phihag/vulnsrv/issues/2) for deployment on vulnsrv.net. If you can translate vulnsrv (about 30 lines of text), please drop an email to [Philipp Hagemeister](https://github.com/phihag).
+Development goals in the near future are [**translation**](https://github.com/phihag/vulnsrv/issues/3) and a [service mode](https://github.com/phihag/vulnsrv/issues/2) for deployment on vulnsrv.net. If you can translate vulnsrv (about 30 lines of text), feel free to contact [Philipp Hagemeister](https://github.com/phihag).
