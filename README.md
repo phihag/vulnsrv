@@ -14,7 +14,7 @@ You can either run it yourself or use the web service at [vulnsrv.net](http://vu
 
 # System Requirements
 
-For running vulnsrv yourself: Python 2.5 or newer (2.6+ recommended in service mode).
+For running vulnsrv yourself: Python 2.5 or newer (2.6+ recommended in service mode, 2.6+ required for development).
 vulnsrv should work under Python 3 even without 2to3.
 
 For the user, any web browser (although a modern web browser that includes developer tools is certainly a good idea).

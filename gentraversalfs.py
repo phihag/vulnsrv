@@ -1,34 +1,54 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os,sys,mimetypes,contextlib,base64,re,bz2
+import json,os,sys,mimetypes,contextlib,base64,re,bz2,tarfile
 import pickle
 
-def lsRecursive(root):
-	""" Yields entries in the form (real filename, virtual filename, children (None if an element)) """
+def listFilesystem(root):
+	""" Yields entries in the form (virtual filename, children (None if an element), file handle (None if a directory)) """
+	if not os.path.isdir(root):
+		raise ValueError('Root is not a directory')
 	visit = [(root, '')]
-	yield (root, '', True)
 	while len(visit) > 0:
 		r,v = visit.pop(0)
-		for direntry in os.listdir(r):
-			fn = os.path.join(r, direntry)
+		children = os.listdir(r)
+		yield (v, children, None)
+		for direntry in children:
+			rfn = os.path.join(r, direntry)
 			vfn = v + '/' + direntry
-			if os.path.isdir(fn):
-				visit.append((fn, vfn))
-				yield (fn, vfn, os.listdir(fn))
+			if os.path.isdir(rfn):
+				visit.append((rfn, vfn))
 			else:
-				yield (fn, vfn, None)
+				yield (vfn, None, open(rfn, 'rb'))
 
-def readFilesFromFsTree(fsroot):
+def listTar(tarfilename):
+	tf = tarfile.open(tarfilename)
+	members = tf.getmembers()
+	rootChildren = []
+	for entry in members:
+		ename = '/' + entry.name.strip('/')
+		if '/' not in ename:
+			rootChildren.append(ename)
+		if entry.isdir():
+			children = [m.name.split('/')[-1] for m in members
+				if m.name.startswith(ename[1:] + '/') and '/' not in m.name[len(ename[1:] + '/')]]
+			yield (ename, children, None)
+		else:
+			f = tf.extractfile(entry)
+			yield (ename, None, f)
+	yield('', rootChildren, None)
+
+def parseFiles(iterFiles):
 	res = {}
-	for rfn,vfn,children in lsRecursive(fsroot):
+	for vfn,children,fileh in iterFiles:
+		assert (children is None) != (fileh is None)
 		fdata = {}
-		if children is not None:
-			fdata['type'] = '__directory__' 
+		if fileh is None:
+			fdata['type'] = '__directory__'
 			fdata['content'] = list(sorted(children))
 		else:
-			fdata['type'] = mimetypes.guess_type(rfn)[0]
-			with contextlib.closing(open(rfn, 'rb')) as f:
+			fdata['type'] = mimetypes.guess_type(vfn)[0]
+			with contextlib.closing(fileh) as f:
 				content = f.read()
 				fdata['blob_b64'] = base64.b64encode(content)
 		res[vfn] = fdata
@@ -36,11 +56,23 @@ def readFilesFromFsTree(fsroot):
 
 def main():
 	if len(sys.argv) != 2:
-		print('Usage: ' + sys.argv[0] + ' [filesystem-root]')
+		print('Usage: ' + sys.argv[0] + ' [root]')
+		print('root can be a directory or a tarfile.')
 		sys.exit(101)
 	fsroot = sys.argv[1]
-	fstree = readFilesFromFsTree(fsroot)
-	s = pickle.dumps(fstree)
+	try:
+		iterFiles = listFilesystem(fsroot)
+		fs = parseFiles(iterFiles)
+	except ValueError:
+		iterFiles = listTar(fsroot)
+		fs = parseFiles(iterFiles)
+	if not '/var/www/img' in fs:
+		raise ValueError('Filesystem is missing image directory')
+	if len(fs['/var/www/img']['content']) == 0:
+		raise ValueError('Image directory empty')
+	if not '' in fs:
+		raise ValueError('Filesystem is missing root directory')
+	s = json.dumps(fs)
 	s64 = base64.b64encode(bz2.compress(s))
 
 	scriptfn = os.path.join(os.path.dirname(__file__), 'vulnsrv.py')
