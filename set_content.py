@@ -75,6 +75,12 @@ def genFaviconRaw(source):
 	with contextlib.closing(open(source, 'rb')) as f:
 		return f.read()
 
+def genDbDataRawFromFile(source):
+	with contextlib.closing(open(source, 'rb')) as f:
+		raw = base64.b16decode(bz2.decompress(f.read()))
+		raw = bz2.compress(raw)
+		return raw
+
 def replaceConstant(code, constant, rawVal):
 	strVal = base64.b64encode(rawVal).decode('ascii')
 	p = re.compile('(' + re.escape(constant) + ') = "[^"]*"')
@@ -83,14 +89,15 @@ def replaceConstant(code, constant, rawVal):
 
 def main():
 	op = OptionParser()
-	op.add_option('-t', '--traversal-root', action='store', type='string', dest='traversalroot', help='Directory or tar file containing the filesystem presented in the path traversal task')
-	op.add_option('-f', '--favicon', action='store', type='string', dest='favicon', help='The favicon file (tab/window icon)')
+	op.add_option('-t', '--traversal-root', dest='traversalroot', help='Directory or tar file containing the filesystem presented in the path traversal task')
+	op.add_option('-f', '--favicon', dest='favicon', help='The favicon file (browser tab/window icon)')
+	op.add_option('-d', '--dbdata-file', dest='dbdata_file', help='Write the initial database data content from the specified, compressed base16-encoded file')
 	options,args = op.parse_args()
 
 	if len(args) != 0:
 		op.error('incorrect number of arguments, use -t and/or -f')
-	if options.traversalroot is None and options.favicon is None:
-		op.error('Please supply at least one of -t or -f')
+	if options.traversalroot is None and options.favicon is None and options.dbdata_file is None:
+		op.error('Please supply at least one of -t, -f, or -d')
 	
 	scriptfn = os.path.join(os.path.dirname(__file__), 'vulnsrv.py')
 	with contextlib.closing(open(scriptfn, 'r+')) as scriptf:
@@ -101,6 +108,9 @@ def main():
 		if options.favicon is not None:
 			faviconRaw = genFaviconRaw(options.favicon)
 			code = replaceConstant(code, '_FAVICON_RAW', faviconRaw)
+		if options.dbdata_file is not None:
+			dbDataRaw = genDbDataRawFromFile(options.dbdata_file)
+			code = replaceConstant(code, '_DBDATA_RAW', dbDataRaw)
 
 		scriptf.seek(0)
 		scriptf.truncate(0)
