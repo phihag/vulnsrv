@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import json,os,sys,mimetypes,contextlib,base64,re,bz2,tarfile
+import json,os,mimetypes,contextlib,base64,re,bz2,tarfile
+from optparse import OptionParser
 
 def listFilesystem(root):
 	""" Yields entries in the form (virtual filename, children (None if an element), file handle (None if a directory)) """
@@ -68,20 +69,38 @@ def genFilesRaw(source):
 		raise ValueError('Filesystem is missing root directory')
 	raw = json.dumps(fs).encode('utf-8')
 	raw = bz2.compress(raw)
-	return base64.b64encode(raw).decode('ascii')
+	return raw
+
+def genFaviconRaw(source):
+	with contextlib.closing(open(source, 'rb')) as f:
+		return f.read()
+
+def replaceConstant(code, constant, rawVal):
+	strVal = base64.b64encode(rawVal).decode('ascii')
+	p = re.compile('(' + re.escape(constant) + ') = "[^"]*"')
+	code = p.sub(lambda m: m.group(1) + ' = "' + strVal + '"', code)
+	return code
 
 def main():
-	if len(sys.argv) != 2:
-		print('Usage: ' + sys.argv[0] + ' [root]')
-		print('root can be a directory or a tarfile.')
-		sys.exit(101)
-	filesRaw = genFilesRaw(sys.argv[1])
+	op = OptionParser()
+	op.add_option('-t', '--traversal-root', action='store', type='string', dest='traversalroot', help='Directory or tar file containing the filesystem presented in the path traversal task')
+	op.add_option('-f', '--favicon', action='store', type='string', dest='favicon', help='The favicon file (tab/window icon)')
+	options,args = op.parse_args()
 
+	if len(args) != 0:
+		op.error('incorrect number of arguments, use -t and/or -f')
+	if options.traversalroot is None and options.favicon is None:
+		op.error('Please supply at least one of -t or -f')
+	
 	scriptfn = os.path.join(os.path.dirname(__file__), 'vulnsrv.py')
 	with contextlib.closing(open(scriptfn, 'r+')) as scriptf:
 		code = scriptf.read()
-		p = re.compile('_FILES_RAW = "[^"]*"')
-		code = p.sub('_FILES_RAW = "' + filesRaw + '"', code)
+		if options.traversalroot is not None:
+			filesRaw = genFilesRaw(options.traversalroot)
+			code = replaceConstant(code, '_FILES_RAW', filesRaw)
+		if options.favicon is not None:
+			faviconRaw = genFaviconRaw(options.favicon)
+			code = replaceConstant(code, '_FAVICON_RAW', faviconRaw)
 
 		scriptf.seek(0)
 		scriptf.truncate(0)
