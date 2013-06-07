@@ -3,7 +3,18 @@
 
 from __future__ import with_statement
 
-import bz2,sys,threading,base64,os,urllib,os.path,sqlite3,struct
+import base64
+import bz2
+import hashlib
+import os
+import os.path
+import pickle
+import struct
+import sqlite3
+import threading
+import time
+import urllib
+import sys
 
 try:
 	import json
@@ -352,6 +363,16 @@ class VulnHandler(BaseHTTPRequestHandler):
 				else:
 					self.vulnState.xssMessage(msg)
 					self._redirect('/xss/?username=Sender%2C')
+		elif reqp.path == '/mac/login':
+			if self._csrfCheck(postParams):
+				val = _uc('user=Gast&time=' + str(int(time.time())))
+				mac = hashlib.sha1(self.server.mac_secret + val).hexdigest()
+				c = {'mac_session': mac + _uc('!') + val}
+				self._redirect('/mac/', c)
+		elif reqp.path == '/mac/set':
+			if self._csrfCheck(postParams):
+				c = {'mac_session': postParams.get('sessionval', '')}
+				self._redirect('/mac/', c)
 		elif reqp.path == '/reset':
 			if self._csrfCheck(postParams):
 				self.vulnState.reset()
@@ -378,6 +399,7 @@ _uc('''
 <li><a href="xss/?username=Benutzer%21">Cross-Site Scripting (XSS)</a></li>
 <li><a href="sqlinjection/">SQL Injection</a></li>
 <li><a href="pathtraversal/">Path Traversal</a></li>
+<li><a href="mac/">MAC Length Extension</a></li>
 </ol>'''), 'vulnsrv', sessionID)
 		elif reqp.path == '/clientauth/':
 			self._writeHtmlDoc(
@@ -500,6 +522,49 @@ _uc('</ul>'), 'Aufgabe 5: Path Traversal', sessionID)
 					self.wfile.write(fileBlob)
 			else:
 				self.send_error(404)
+		elif reqp.path == '/mac/':
+			cookieHeader = self.headers.get('cookie', '')
+			cookie = _cookies.SimpleCookie(cookieHeader)
+			session_morsel = cookie.get('mac_session')
+			if session_morsel:
+				raw_cookie = session_morsel.value
+				mac,_,session_data = raw_cookie.rpartition(_uc('!'))
+				secret = self.server.mac_secret
+				if hashlib.sha1(secret + session_data).hexdigest() == mac:
+					session = query2dict(session_data)
+					user = session['user']
+					timestamp = session['time']
+				else:
+					user = timestamp = _uc('(Falscher MAC)')
+			else:
+				raw_cookie = _uc('')
+				user = timestamp = _uc('(Nicht gesetzt)')
+
+			self._writeHtmlDoc(
+_uc('''
+<p>Loggen Sie sich als Benutzer admin ein (ohne das Geheimnis aus dem Server-Prozess auszulesen).
+Schreiben Sie daf&uuml;r ein Programm, das den korrekten Cookie-Wert berechnet.</p>
+
+<form method="post" action="login">''')
++ self._getCsrfTokenField(sessionID) +
+_uc('''<input type="submit" value="Gast-Login" />
+</form>
+
+<h3>Aktuelle Session-Daten:</h3>
+
+<p>Cookie (roh): <code>''') + html.escape(raw_cookie) + _uc('''</code></p>
+
+<dl>
+<dt>Benutzername:</dt><dd>''') + html.escape(user) + _uc('''</dd>
+<dt>Login-Zeit:</dt><dd>''') + html.escape(timestamp) + _uc('''</dd>
+</dl>
+
+<form method="post" action="set">''')
++ self._getCsrfTokenField(sessionID) +
+_uc('''<input type="text" name="sessionval" size="100" value="''') + html.escape(raw_cookie) + _uc('''" />
+<input type="submit" value="Cookie setzen" />
+</form>
+'''), 'Length Extension-Angriffe gegen MAC', sessionID)
 		elif reqp.path == '/favicon.ico':
 			self.send_response(200)
 			self.send_header('Content-Type', 'image/png')
@@ -551,6 +616,7 @@ _uc('''
 <a href="/xss/?username=Benutzer%21">Cross-Site Scripting (XSS)</a>
 <a href="/sqlinjection/">SQL Injection</a>
 <a href="/pathtraversal/">Path Traversal</a>
+<a href="/mac/">MAC Length Extension</a>
 <span class="sep"></span>
 <form class="reset" method="post" action="/reset">''')
 + self._getCsrfTokenField(sessionID) +
@@ -562,10 +628,7 @@ _uc('''<input type="submit" value="clear data" />
 		htmlBytes = htmlCode.encode('utf-8')
 
 		self.send_response(200)
-		sessionCookie = _cookies.SimpleCookie()
-		sessionCookie['sessionID'] = sessionID # Automatically converted to Morsel
-		sessionCookie['sessionID']['path'] = '/'
-		self.wfile.write((sessionCookie.output(sep='\r\n') + '\r\n').encode('ascii'))
+		self._write_cookies()
 		self.send_header('X-XSS-Protection', '0')
 		self.send_header('Content-Length', str(len(htmlBytes)))
 		self.send_header('Content-Type', mimeType)
@@ -573,11 +636,22 @@ _uc('''<input type="submit" value="clear data" />
 
 		self.wfile.write(htmlBytes)
 
-	def _redirect(self, target):
+	def _redirect(self, target, cookieData=None):
 		self.send_response(302)
 		self.send_header('Location', target)
 		self.send_header('Content-Length', '0')
+		self._write_cookies(cookieData)
 		self.end_headers()
+
+	def _write_cookies(self, addData=None):
+		c = _cookies.SimpleCookie()
+		c['sessionID'] = self._getSessionID()
+		c['sessionID']['path'] = '/'
+		if addData:
+			for k,v in addData.items():
+				c[k] = v
+				c[k]['path'] = '/'
+		self.wfile.write((c.output(sep='\r\n') + '\r\n').encode('ascii'))
 
 	def _readPostParams(self):
 		contentLen = int(self.headers['content-length'])
@@ -619,6 +693,7 @@ _uc('''<input type="submit" value="clear data" />
 class VulnServer(ThreadingMixIn, HTTPServer):
 	def __init__(self, config):
 		self.vulnState = VulnState()
+		self.mac_secret = base64.b64encode(os.urandom(32))
 		addr = (config.get('addr', 'localhost'), config.get('port', 8666))
 		HTTPServer.__init__(self, addr, VulnHandler)
 
