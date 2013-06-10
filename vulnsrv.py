@@ -555,7 +555,7 @@ _uc('</ul>'), 'Aufgabe 5: Path Traversal', sessionID)
             self._writeHtmlDoc(
 _uc('''
 <p>Loggen Sie sich als Benutzer admin ein (ohne das Geheimnis aus dem Server-Prozess auszulesen).
-Schreiben Sie daf&uuml;r ein Programm, das den korrekten Cookie-Wert berechnet.</p>
+Schreiben Sie daf&#x00fc;r ein Programm, das den korrekten Cookie-Wert berechnet.</p>
 
 <form method="post" action="login">''')
 + self._getCsrfTokenField(sessionID) +
