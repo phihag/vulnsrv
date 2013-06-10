@@ -206,7 +206,7 @@ def query2dict(query):
             intv = int(pstr[:2], 16)
             pbyte = struct.pack('!B', intv)
             resbin += pbyte + pstr[2:]
-        res = resbin.decode('UTF-8')
+        res = resbin.decode('UTF-8', 'ignore')
         return res
 
     res = {}
@@ -377,11 +377,9 @@ class VulnHandler(BaseHTTPRequestHandler):
                     self._redirect('/xss/?username=Sender%2C')
         elif reqp.path == '/mac/login':
             if self._csrfCheck(postParams):
-                val_str = _uc('user=Gast&time=' + str(int(time.time())))
-                val = val_str.encode('utf-8')
-                mac_str = hashlib.sha256(self.server.mac_secret + val).hexdigest()
-                mac = mac_str.encode('ascii')
-                cookieval = mac + b'!' + val
+                val = _uc('user=Gast&time=' + str(int(time.time())))
+                mac = hashlib.sha256(self.server.mac_secret + val.encode('ascii')).hexdigest()
+                cookieval = mac + '!' + val
                 c = {'mac_session': cookieval}
                 self._redirect('/mac/', c)
         elif reqp.path == '/mac/set':
@@ -546,7 +544,7 @@ _uc('</ul>'), 'Aufgabe 5: Path Traversal', sessionID)
             if raw_cookie is not None:
                 assert isinstance(raw_cookie, _uc)
                 mac,_,session_data_str = raw_cookie.rpartition(_uc('!'))
-                session_data = session_data_str.encode('utf-8')
+                session_data = session_data_str.encode('latin1')
                 secret = self.server.mac_secret
                 if hashlib.sha256(secret + session_data).hexdigest() == mac:
                     session = query2dict(session_data)
@@ -573,7 +571,7 @@ _uc('''<input type="submit" value="Gast-Login" />
 
 <h3>Aktuelle Session-Daten:</h3>
 
-<p>Cookie (roh): <code>''') + html.escape(raw_cookie) + _uc('''</code></p>
+<p>Cookie (roh): <code>''') + html.escape(raw_cookie) + _uc('''</code> (''') + html.escape(_uc(len(raw_cookie))) + _uc(''' Bytes)</p>
 
 <dl>
 <dt>Benutzername:</dt><dd>''') + html.escape(user) + _uc('''</dd>
@@ -669,25 +667,28 @@ _uc('''<input type="submit" value="clear data" />
 
     def _writeCookies(self, add=None):
         cookies = {
-            'sessionID': self._getSessionID().encode('utf-8')
+            'sessionID': self._getSessionID()
         }
         if add:
             cookies.update(add)
         c = _cookies.SimpleCookie()
         for k,v in cookies.items():
             assert re.match(r'^[a-zA-Z0-9_-]+$', k)
-            assert isinstance(v, compat_bytes)
-            strv = v.decode('latin1')
-            c[k] = strv
+            assert isinstance(v, _uc)
+            c[k] = v
             c[k]['path'] = '/'
             c[k]['httponly'] = True
-        self.wfile.write((c.output(sep='\r\n') + '\r\n').encode('ascii'))
+        outp = c.output(sep=_uc('\r\n')) + _uc('\r\n')
+        assert isinstance(outp, _uc)
+        self.wfile.write(outp.encode('utf-8'))
 
     def _readCookies(self):
         hdr = self.headers.get('cookie', '')
         assert isinstance(hdr, _uc)
         c = _cookies.SimpleCookie(hdr)
-        res = dict((morsel.key, morsel.value) for morsel in c.values())
+        res = {}
+        for morsel in c.values():
+            res[morsel.key] = morsel.value
         return res
 
     def _readPostParams(self):
@@ -729,7 +730,7 @@ _uc('''<input type="submit" value="clear data" />
 class VulnServer(ThreadingMixIn, HTTPServer):
     def __init__(self, config):
         self.vulnState = VulnState()
-        self.mac_secret = base64.b64encode(os.urandom(32))
+        self.mac_secret = hashlib.sha256(os.urandom(32)).hexdigest()
         addr = (config.get('addr', 'localhost'), config.get('port', 8666))
         HTTPServer.__init__(self, addr, VulnHandler)
 
