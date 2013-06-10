@@ -382,13 +382,6 @@ class VulnHandler(BaseHTTPRequestHandler):
                 cookieval = mac + '!' + val
                 c = {'mac_session': cookieval}
                 self._redirect('/mac/', c)
-        elif reqp.path == '/mac/set':
-            if self._csrfCheck(postParams):
-                sessionval_input = postParams.get('sessionval', '')
-                assert isinstance(sessionval_input, _uc)
-                sessionval = binascii.a2b_hex(sessionval_input.encode('ascii'))
-                c = {'mac_session': sessionval}
-                self._redirect('/mac/', c)
         elif reqp.path == '/reset':
             if self._csrfCheck(postParams):
                 self.vulnState.reset()
@@ -577,15 +570,6 @@ _uc('''<input type="submit" value="Gast-Login" />
 <dt>Benutzername:</dt><dd>''') + html.escape(user) + _uc('''</dd>
 <dt>Login-Zeit:</dt><dd>''') + html.escape(timestamp) + _uc('''</dd>
 </dl>
-
-<!--
-This form does not impact security at all, but is hidden in order to avoid confusion.
--->
-<form method="post" action="set">''')
-+ self._getCsrfTokenField(sessionID) +
-_uc('''<input placeholder="Cookie als hexadezimale Byte-Werte" type="text" name="sessionval" size="100" required="required" pattern="[a-zA-Z0-9]*" value="''') + html.escape(raw_cookie_hex) + _uc('''" />
-<input type="submit" value="Cookie für den Browser setzen" />
-</form>
 '''), 'Length Extension-Angriffe gegen MAC', sessionID)
         elif reqp.path == '/favicon.ico':
             self.send_response(200)
