@@ -730,7 +730,7 @@ _uc('''<input type="submit" value="clear data" />
 class VulnServer(ThreadingMixIn, HTTPServer):
     def __init__(self, config):
         self.vulnState = VulnState()
-        self.mac_secret = hashlib.sha256(os.urandom(32)).hexdigest()
+        self.mac_secret = hashlib.sha256(os.urandom(32)).hexdigest().encode('ascii')
         addr = (config.get('addr', 'localhost'), config.get('port', 8666))
         HTTPServer.__init__(self, addr, VulnHandler)
 
