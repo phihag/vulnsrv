@@ -535,7 +535,8 @@ _uc('</ul>'), 'Aufgabe 5: Path Traversal', sessionID)
             cookies = self._readCookies()
             raw_cookie = cookies.get('mac_session')
             if raw_cookie is not None:
-                assert isinstance(raw_cookie, _uc)
+                if isinstance(raw_cookie, compat_bytes): # Python 2.x
+                    raw_cookie = raw_cookie.decode('latin1')
                 mac,_,session_data_str = raw_cookie.rpartition(_uc('!'))
                 session_data = session_data_str.encode('latin1')
                 secret = self.server.mac_secret
@@ -658,17 +659,16 @@ _uc('''<input type="submit" value="clear data" />
         c = _cookies.SimpleCookie()
         for k,v in cookies.items():
             assert re.match(r'^[a-zA-Z0-9_-]+$', k)
-            assert isinstance(v, _uc)
             c[k] = v
             c[k]['path'] = '/'
-            c[k]['httponly'] = True
+            if sys.version_info >= (2, 6):
+                c[k]['httponly'] = True
         outp = c.output(sep=_uc('\r\n')) + _uc('\r\n')
         assert isinstance(outp, _uc)
         self.wfile.write(outp.encode('utf-8'))
 
     def _readCookies(self):
         hdr = self.headers.get('cookie', '')
-        assert isinstance(hdr, _uc)
         c = _cookies.SimpleCookie(hdr)
         res = {}
         for morsel in c.values():
