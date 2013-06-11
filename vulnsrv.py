@@ -729,7 +729,11 @@ def main():
     else:
         help()
     vsrv = VulnServer(config)
-    vsrv.serve_forever()
+    try:
+        vsrv.serve_forever()
+    except KeyboardInterrupt:
+        print('Killed by keyboard interrupt')
+        sys.exit(99)
 
 def help():
     sys.stdout.write('Usage: ' + sys.argv[0] + ' [configfile]\n')
