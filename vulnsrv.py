@@ -677,7 +677,10 @@ _uc('''<input type="submit" value="clear data" />
                 c[k]['httponly'] = True
         outp = c.output(sep=_uc('\r\n')) + _uc('\r\n')
         assert isinstance(outp, _uc)
-        self.wfile.write(outp.encode('utf-8'))
+        if hasattr(self, '_headers_buffer'):
+            self._headers_buffer.append(outp.encode('latin1', 'strict'))
+        else:
+            self.wfile.write(outp.encode('latin1', 'strict'))
 
     def _readCookies(self):
         hdr = self.headers.get('cookie', '')
