@@ -488,7 +488,7 @@ _uc('''
 '''), 'Detailansicht: Nachricht ' + msgNum, sessionID)
         elif reqp.path == '/pathtraversal/':
             fileHtml = _uc('').join(
-                _uc('<li><a href="get?') + html.escape(urllib.urlencode([('file', fn)])) + _uc('">') + html.escape(fn) + _uc('</a></li>\n')
+                _uc('<li><a href="get?') + html.escape(urlencode([('file', fn)])) + _uc('">') + html.escape(fn) + _uc('</a></li>\n')
                 for fn in FILES['/var/www/img']['content'])
             self._writeHtmlDoc(
 _uc('''
