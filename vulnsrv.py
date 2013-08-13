@@ -307,10 +307,18 @@ class VulnState(object):
     def sqlQuery(self, sql):
         return self._sqlThread.query(sql)
 
+    @property
+    @_VulnState_locked
+    def macSecret(self):
+        return self._macSecret
+
     @_VulnState_locked
     def reset(self):
         self._csrfMessages = []
         self._xssMessages = []
+        self._macSecret = hashlib.md5(os.urandom(32)).hexdigest().encode('ascii')
+        assert len(self._macSecret) == 32
+
         # TODO replace this with a Python in-memory database, which takes DBDATA in its constructor (and only needs to be initialized once)
         self._sqlThread.query('_reset_')
         for tableName,td in DBDATA.items():
@@ -378,7 +386,7 @@ class VulnHandler(BaseHTTPRequestHandler):
         elif reqp.path == '/mac/login':
             if self._csrfCheck(postParams):
                 val = _uc('user=Gast&time=' + str(int(time.time())))
-                mac = hashlib.sha256(self.server.mac_secret + val.encode('ascii')).hexdigest()
+                mac = hashlib.sha256(self.vulnState.macSecret + val.encode('ascii')).hexdigest()
                 cookieval = mac + '!' + val
                 c = {'mac_session': cookieval}
                 self._redirect('/mac/', c)
@@ -539,7 +547,7 @@ _uc('</ul>'), 'Aufgabe 5: Path Traversal', sessionID)
                     raw_cookie = raw_cookie.decode('latin1')
                 mac,_,session_data_str = raw_cookie.rpartition(_uc('!'))
                 session_data = session_data_str.encode('latin1')
-                secret = self.server.mac_secret
+                secret = self.vulnState.macSecret
                 if hashlib.sha256(secret + session_data).hexdigest() == mac:
                     session = query2dict(session_data)
                     user = session['user']
@@ -729,8 +737,6 @@ _uc('''<input type="submit" value="clear data" />
 class VulnServer(ThreadingMixIn, HTTPServer):
     def __init__(self, config):
         self.vulnState = VulnState()
-        self.mac_secret = hashlib.md5(os.urandom(32)).hexdigest().encode('ascii')
-        assert len(self.mac_secret) == 32
         addr = (config.get('addr', 'localhost'), config.get('port', 8666))
         HTTPServer.__init__(self, addr, VulnHandler)
 
