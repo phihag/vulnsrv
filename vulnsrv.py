@@ -756,6 +756,7 @@ _uc('''<input type="submit" value="clear data" />
 </body>
 </html>
 """
+    error_content_type = 'text/html; charset=utf-8'
 
     def send_error(self, code, message=u''):
         codestr, explain = self.responses.get(code, (str(code), u'Unknown code'))
