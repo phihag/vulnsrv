@@ -605,7 +605,9 @@ Das Skript erwartet, dass im lokalen Verzeichnis eine ausf&#x00fc;hrbare Datei .
         if add_headers is None:
             add_headers = [
                 ('X-Frame-Options', 'DENY'),
-                ('X-XSS-Protection', '0')
+                ('X-XSS-Protection', '0'),
+                ('Cache-Control', 'private, max-age=0, no-cache'),
+                ('Pragma', 'no-cache'),
             ]
 
         title = _uc(title)
