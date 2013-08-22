@@ -734,6 +734,33 @@ _uc('''<input type="submit" value="clear data" />
     def _getCsrfTokenField(self, sessionID):
         return _uc('<input type="hidden" name="csrfToken" value="') + html.escape(sessionID) + _uc('" />')
 
+    error_message_format = u"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>%(code)d %(codestr)s</title>
+</head>
+<body>
+<h1>Error %(code)d: %(codestr)s</h1>
+<p>%(explain)s</p>
+<p>Message: %(message)s</p>
+</body>
+</html>
+"""
+
+    def send_error(self, code, message=u''):
+        codestr, explain = self.responses.get(code, (str(code), u'Unknown code'))
+        self.log_error("code %d, message %s", code, message)
+        content = (self.error_message_format %
+                   {'code': code, 'message': html.escape(message),
+                    'explain': explain, 'codestr': codestr})
+        self.send_response(code, codestr)
+        self.send_header('Content-Type', self.error_content_type)
+        self.end_headers()
+        if self.command != 'HEAD' and code >= 200 and code not in (204, 304):
+            self.wfile.write(content.encode('utf-8'))
+
+
 class VulnServer(ThreadingMixIn, HTTPServer):
     def __init__(self, config):
         self.vulnState = VulnState()
