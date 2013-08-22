@@ -601,7 +601,13 @@ Das Skript erwartet, dass im lokalen Verzeichnis eine ausf&#x00fc;hrbare Datei .
         else:
             self.send_error(404)
 
-    def _writeHtmlDoc(self, htmlContent, title, sessionID):
+    def _writeHtmlDoc(self, htmlContent, title, sessionID, add_headers=None):
+        if add_headers is None:
+            add_headers = [
+                ('X-Frame-Options', 'DENY'),
+                ('X-XSS-Protection', '0')
+            ]
+
         title = _uc(title)
         mimeType = _uc('text/html; charset=utf-8')
         htmlCode = (
@@ -656,9 +662,10 @@ _uc('''<input type="submit" value="clear data" />
 
         self.send_response(200)
         self._writeCookies()
-        self.send_header('X-XSS-Protection', '0')
         self.send_header('Content-Length', str(len(htmlBytes)))
         self.send_header('Content-Type', mimeType)
+        for k, v in add_headers:
+            self.send_header(k, v)
         self.end_headers()
 
         self.wfile.write(htmlBytes)
@@ -756,6 +763,7 @@ _uc('''<input type="submit" value="clear data" />
                     'explain': explain, 'codestr': codestr})
         self.send_response(code, codestr)
         self.send_header('Content-Type', self.error_content_type)
+        self.send_header('X-Frame-Options', 'deny')
         self.end_headers()
         if self.command != 'HEAD' and code >= 200 and code not in (204, 304):
             self.wfile.write(content.encode('utf-8'))
