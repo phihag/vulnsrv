@@ -412,11 +412,11 @@ class VulnHandler(BaseHTTPRequestHandler):
 _uc('''
 <ol class="mainMenu">
 <li><a href="clientauth/">Client-Side Authorization Check</a></li>
+<li><a href="mac/">MAC Length Extension</a></li>
 <li><a href="csrf/">Cross-Site Request Forgery (CSRF)</a></li>
 <li><a href="xss/?username=Benutzer%21">Cross-Site Scripting (XSS)</a></li>
 <li><a href="sqlinjection/">SQL Injection</a></li>
 <li><a href="pathtraversal/">Path Traversal</a></li>
-<li><a href="mac/">MAC Length Extension</a></li>
 </ol>'''), 'vulnsrv', sessionID)
         elif reqp.path == '/clientauth/':
             self._writeHtmlDoc(
@@ -647,11 +647,11 @@ _uc('</h1>\n')
 _uc('''
 <nav>
 <a href="/clientauth/">Client-Side Authorization Check</a>
+<a href="/mac/">MAC Length Extension</a>
 <a href="/csrf/">Cross-Site Request Forgery (CSRF)</a>
 <a href="/xss/?username=Benutzer%21">Cross-Site Scripting (XSS)</a>
 <a href="/sqlinjection/">SQL Injection</a>
 <a href="/pathtraversal/">Path Traversal</a>
-<a href="/mac/">MAC Length Extension</a>
 <span class="sep"></span>
 <form class="reset" method="post" action="/reset">''')
 + self._getCsrfTokenField(sessionID) +
