@@ -430,7 +430,7 @@ onclick="''')
 _uc('''" />''')
 + self._getCsrfTokenField(sessionID) +
 _uc('''</form>
-'''), 'Aufgabe 1: Client-Side Authorization Check', sessionID)
+'''), 'Client-Side Authorization Check', sessionID)
         elif reqp.path == '/csrf/':
             self._writeHtmlDoc(
 _uc('''
@@ -442,7 +442,7 @@ Erstellen Sie eine HTML-Datei <code>evil-csrf.html</code>, bei deren Aufruf der 
 <input type="text" name="message" autofocus="autofocus" required="required" placeholder="Eine freundliche Nachricht" size="50" />
 <input type="submit" value="Senden" />
 </form>
-''') + msgsToHtml(self.vulnState.csrfMessages), 'Aufgabe 2: CSRF', sessionID)
+''') + msgsToHtml(self.vulnState.csrfMessages), 'CSRF', sessionID)
         elif reqp.path == '/xss/':
             username = getParams.get('username', 'Unbekannter')
             self._writeHtmlDoc(
@@ -460,7 +460,7 @@ _uc('''
 <input type="text" name="message" autofocus="autofocus" required="required" placeholder="Eine freundliche Nachricht" size="50" />
 <input type="submit" value="Senden" />
 </form>
-''') + msgsToHtml(self.vulnState.xssMessages), 'Aufgabe 3: XSS', sessionID)
+''') + msgsToHtml(self.vulnState.xssMessages), 'XSS', sessionID)
         elif reqp.path == '/sqlinjection/':
             webMessages = self.vulnState.sqlQuery("SELECT id,msg FROM messages WHERE user='web'")
             self._writeHtmlDoc(
@@ -471,7 +471,7 @@ _uc('''
 
 <ul class="messages">''')
 + '\n'.join('<li><a href="/sqlinjection/msg?id=' + html.escape(str(row[0])) + '">' + html.escape(row[1]) + '</a></li>' for row in webMessages) +
-_uc('</ul>'), 'Aufgabe 4: SQL Injection', sessionID)
+_uc('</ul>'), 'SQL Injection', sessionID)
         elif reqp.path == '/sqlinjection/msg':
             msgNum = getParams.get('id', '')
             sql = "SELECT id,user,msg FROM messages WHERE user='web' AND id='" + msgNum + "'"
@@ -508,7 +508,7 @@ _uc('''
 
 <ul>''')
 + fileHtml +
-_uc('</ul>'), 'Aufgabe 5: Path Traversal', sessionID)
+_uc('</ul>'), 'Path Traversal', sessionID)
         elif reqp.path == '/pathtraversal/get':
             fn = '/var/www/img/' + getParams.get('file', '')
             # Resolve the path.
