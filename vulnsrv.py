@@ -146,7 +146,9 @@ try:
 except NameError:
     _uc = str  # Python 3
 
-_b = lambda s: s.encode('ascii')
+
+def _b(s):
+    return s.encode('ascii')
 
 try:
     compat_bytes = bytes
@@ -349,8 +351,8 @@ class VulnState(object):
         for tableName, td in DBDATA.items():
             csql = (
                 'CREATE TABLE ' + tableName + ' (' +
-                ','.join(col['name'] + ' ' + col['type'] for col in td['structure'])
-                + ')')
+                ','.join(col['name'] + ' ' + col['type'] for col in td['structure']) +
+                ')')
             self._sqlThread.query(csql)
             for d in td['data']:
                 dsql = (
@@ -391,9 +393,8 @@ class VulnHandler(BaseHTTPRequestHandler):
         if reqp.path == '/clientauth/secret':
             if self._csrfCheck(postParams):  # Technically, not a problem here - until we're starting to log who knows the secret
                 self._writeHtmlDoc(
-                    _uc('<code class="secret">')
-                    + html.escape(base64.b16decode('4356452F4D49545245'.encode('ascii')).decode('UTF-8')) +
-                    _uc('</code>'),
+                    _uc('<code class="secret">%s</code>') %
+                    html.escape(base64.b16decode('4356452F4D49545245'.encode('ascii')).decode('UTF-8')),
                     'Geheimnis', sessionID)
         elif reqp.path == '/csrf/send':
             # No CSRF check here, duh

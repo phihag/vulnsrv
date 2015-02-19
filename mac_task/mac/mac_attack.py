@@ -1,12 +1,6 @@
 #!/usr/bin/env python
 
-URL = 'http://localhost:8666/mac/'
-SECRETLEN = 32
-
-
 import subprocess
-
-
 # Compatibility for Python 2 and 3
 try:
     from urllib.request import HTTPCookieProcessor, build_opener, Request, urlopen
@@ -16,7 +10,15 @@ try:
     from urllib.parse import urlencode
 except ImportError:
     from urllib import urlencode
-b = lambda s: s.encode('ascii')
+
+
+URL = 'http://localhost:8666/mac/'
+SECRETLEN = 32
+
+
+def b(s):
+    return s.encode('ascii')
+
 
 # In <2.5, there's no str.partition
 if not hasattr(str, 'partition'):
