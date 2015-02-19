@@ -21,6 +21,8 @@ try:
     import json
 except ImportError:
     # Python <2.6, use trivialjson (https://github.com/phihag/trivialjson):
+    unichr = __builtins__.unichr  # Trick modern flake8
+
     class json(object):
         @staticmethod
         def loads(s):
