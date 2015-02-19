@@ -54,7 +54,7 @@ except ImportError:
                 if esc[0] == 'u':
                     if len(esc) == len('u') + 4:
                         return unichr(int(esc[1:5], 16))
-                    if len(esc) == 5+6 and esc[5:7] == '\\u':
+                    if len(esc) == 5 + 6 and esc[5:7] == '\\u':
                         hi = int(esc[1:5], 16)
                         low = int(esc[7:11], 16)
                         return unichr((hi - 0xd800) * 0x400 + low - 0xdc00 + 0x10000)
@@ -189,8 +189,18 @@ try:
     import html
     html.escape
 except (ImportError, AttributeError):  # Python < 3.2
-    _escape_map = {ord('&'): _uc('&amp;'), ord('<'): _uc('&lt;'), ord('>'): _uc('&gt;')}
-    _escape_map_full = {ord('&'): _uc('&amp;'), ord('<'): _uc('&lt;'), ord('>'): _uc('&gt;'), ord('"'): _uc('&quot;'), ord('\''): _uc('&#x27;')}
+    _escape_map = {
+        ord('&'): _uc('&amp;'),
+        ord('<'): _uc('&lt;'),
+        ord('>'): _uc('&gt;'),
+    }
+    _escape_map_full = {
+        ord('&'): _uc('&amp;'),
+        ord('<'): _uc('&lt;'),
+        ord('>'): _uc('&gt;'),
+        ord('"'): _uc('&quot;'),
+        ord('\''): _uc('&#x27;'),
+    }
 
     class html(object):
         @staticmethod
@@ -350,8 +360,7 @@ class VulnState(object):
 
 
 def msgsToHtml(msgs):
-    res = (
-_uc('''
+    res = (_uc('''
 <h2>Nachrichten</h2>
 
 <ul class="messages">'''))
@@ -436,19 +445,20 @@ class VulnHandler(BaseHTTPRequestHandler):
 </ol>'''), 'vulnsrv', sessionID)
         elif reqp.path == '/clientauth/':
             js_code = html.escape('if (\'you\' != \'admin\') {alert(\'Zugriff verweigert!\'); return false;} else return true;', True)
-            self._writeHtmlDoc(('''
-<p>Finden Sie das Geheimnis heraus!</p>
+            self._writeHtmlDoc(
+                _uc('''
+    <p>Finden Sie das Geheimnis heraus!</p>
 
-<form action="secret" method="post">
-<input type="submit" value="Geheimnis herausfinden"
-onclick="%s" />
-%s
-</form>
-''' % js_code, self._getCsrfTokenField(sessionID),
-            'Client-Side Authorization Check', sessionID)
+    <form action="secret" method="post">
+    <input type="submit" value="Geheimnis herausfinden"
+    onclick="%s" />
+    %s
+    </form>
+    ''') % js_code, self._getCsrfTokenField(sessionID),
+                'Client-Side Authorization Check', sessionID)
         elif reqp.path == '/csrf/':
             self._writeHtmlDoc(
-_uc('''
+                _uc('''
 <p>Mit dem untenstehendem Formular k&ouml;nnen Sie Nachrichten schreiben.
 Erstellen Sie eine HTML-Datei <code>evil-csrf.html</code>, bei deren Aufruf der arglose Benutzer hier unfreiwillig eine &uuml;belgesinnte Nachricht hinterl&auml;sst.
 </p>
@@ -460,70 +470,60 @@ Erstellen Sie eine HTML-Datei <code>evil-csrf.html</code>, bei deren Aufruf der 
 ''') + msgsToHtml(self.vulnState.csrfMessages), 'CSRF', sessionID)
         elif reqp.path == '/xss/':
             username = getParams.get('username', 'Unbekannter')
-            self._writeHtmlDoc(
-_uc('<div>Hallo ')
-+ _uc(username) +
-_uc('''</div>
+            self._writeHtmlDoc(_uc(
+                '''<div>Hallo %s</div>
 <p>Das untenstehende Formular ist gegen Cross-Site Request Forgery gesch&uuml;tzt.
 Erstellen Sie eine HTML-Datei <code>evil-xss.html</code>, bei deren Aufruf der arglose Benutzer hier trotzdem unfreiwillig eine &uuml;belgesinnte Nachricht hinterl&auml;sst.
 </p>
 
 <form action="send" enctype="application/x-www-form-urlencoded" method="post">
-''')
-+ self._getCsrfTokenField(sessionID) +
-_uc('''
 <input type="text" name="message" autofocus="autofocus" required="required" placeholder="Eine freundliche Nachricht" size="50" />
 <input type="submit" value="Senden" />
 </form>
-''') + msgsToHtml(self.vulnState.xssMessages), 'XSS', sessionID)
+''') % (_uc(username), self._getCsrfTokenField(sessionID)) + msgsToHtml(self.vulnState.xssMessages), 'XSS', sessionID)
         elif reqp.path == '/sqlinjection/':
             webMessages = self.vulnState.sqlQuery("SELECT id,msg FROM messages WHERE user='web'")
-            self._writeHtmlDoc(
-_uc('''
+            self._writeHtmlDoc(_uc('''
 <p>In der untenstehenden Tabelle sehen Sie die Nachrichten an den Benutzer <code>web</code>. Welche Nachrichten hat der Benutzer <code>admin</code> bekommen?</p>
 
 <h2>Nachrichten an <code>web</code></h2>
 
-<ul class="messages">''')
-+ '\n'.join('<li><a href="/sqlinjection/msg?id=' + html.escape(str(row[0])) + '">' + html.escape(row[1]) + '</a></li>' for row in webMessages) +
-_uc('</ul>'), 'SQL Injection', sessionID)
+<ul class="messages">
+%s
+</ul>''') % '\n'.join('<li><a href="/sqlinjection/msg?id=' + html.escape(str(row[0])) + '">' + html.escape(row[1]) + '</a></li>' for row in webMessages), 'SQL Injection', sessionID)
         elif reqp.path == '/sqlinjection/msg':
             msgNum = getParams.get('id', '')
             sql = "SELECT id,user,msg FROM messages WHERE user='web' AND id='" + msgNum + "'"
             try:
                 msgs = self.vulnState.sqlQuery(sql)
                 if len(msgs) == 0:
-                    msgHtml = '<td colspan="3">Keine web-Nachrichten gefunden</td>'
+                    msg_html = '<td colspan="3">Keine web-Nachrichten gefunden</td>'
                 else:
-                    msgHtml = '\n'.join('<tr>' + ''.join('<td>' + html.escape(str(cell)) + '</td>' for cell in row) + '</tr>' for row in msgs)
+                    msg_html = '\n'.join('<tr>' + ''.join('<td>' + html.escape(str(cell)) + '</td>' for cell in row) + '</tr>' for row in msgs)
             except:
-                _type,e,_traceback = sys.exc_info()
-                msgHtml = '<td colspan="3" class="error">' + html.escape(str(e)) + '</td>'
-            self._writeHtmlDoc(
-_uc('''
+                _type, e, _traceback = sys.exc_info()
+                msg_html = '<td colspan="3" class="error">' + html.escape(str(e)) + '</td>'
+            self._writeHtmlDoc(('''
 <table class="messages">
 <thead><tr><th>ID</th><th>Benutzer</th><th>Nachricht</th></tr></thead>
-''')
-+ msgHtml +
-_uc('''
+%s
 </table>
 <p><a href="/sqlinjection/">Zur&uuml;ck zur &Uuml;bersicht</a></p>
-'''), 'Detailansicht: Nachricht ' + msgNum, sessionID)
+''' % msg_html), 'Detailansicht: Nachricht ' + msgNum, sessionID)
         elif reqp.path == '/pathtraversal/':
             fileHtml = _uc('').join(
                 _uc('<li><a href="get?') + html.escape(urlencode([('file', fn)])) + _uc('">') + html.escape(fn) + _uc('</a></li>\n')
                 for fn in FILES['/var/www/img']['content'])
-            self._writeHtmlDoc(
-_uc('''
+            self._writeHtmlDoc(_uc('''
 <p>Welchen Unix-Account sollte ein Angreifer n&auml;her untersuchen?</p>
 
 <p><em>Bonus-Aufgabe</em>: Was ist das Passwort des Accounts?</p>
 
 <p>Dateien zum Download:</p>
 
-<ul>''')
-+ fileHtml +
-_uc('</ul>'), 'Path Traversal', sessionID)
+<ul>
+%s
+'</ul>''' % fileHtml), 'Path Traversal', sessionID)
         elif reqp.path == '/pathtraversal/get':
             fn = '/var/www/img/' + getParams.get('file', '')
             # Resolve the path.
@@ -576,29 +576,34 @@ _uc('</ul>'), 'Path Traversal', sessionID)
             assert isinstance(raw_cookie, _uc)
             raw_cookie_hex = binascii.b2a_hex(raw_cookie.encode('utf-8')).decode('ascii')
             assert isinstance(raw_cookie_hex, _uc)
-            self._writeHtmlDoc(
-_uc('''
+            self._writeHtmlDoc(_uc('''
 <p>Loggen Sie sich als Benutzer admin ein (ohne das Geheimnis aus dem Server-Prozess auszulesen).
 Schreiben Sie daf&#x00fc;r ein Programm, das den korrekten Cookie-Wert berechnet.</p>
 
-<form method="post" action="login">''')
-+ self._getCsrfTokenField(sessionID) +
-_uc('''<input type="submit" value="Gast-Login" />
+<form method="post" action="login">
+%s
+<input type="submit" value="Gast-Login" />
 </form>
 
 <h3>Aktuelle Session-Daten:</h3>
 
-<p>Cookie (roh): <code>''') + html.escape(raw_cookie) + _uc('''</code> (''') + html.escape(_uc(len(raw_cookie))) + _uc(''' Bytes)</p>
+<p>Cookie (roh): <code>%s</code> (%s Bytes)</p>
 
 <dl>
-<dt>Benutzername:</dt><dd>''') + html.escape(user) + _uc('''</dd>
-<dt>Login-Zeit:</dt><dd>''') + html.escape(timestamp) + _uc('''</dd>
+<dt>Benutzername:</dt><dd>%s</dd>
+<dt>Login-Zeit:</dt><dd>%s</dd>
 </dl>
 
 <p>F&#x00fc;r den Angriff k&#x00f6;nnen Sie <a href="mac_attack.py">dieses Python-Skript</a> verwenden.
 Das Skript erwartet, dass im lokalen Verzeichnis eine ausf&#x00fc;hrbare Datei ./mac_extension liegt, die mit den Argumenten <code>[Bekannter Hash]</code> <code>[Bekannte Eingabe]</code> <code>[Einzuf&#x00fc;gende Daten]</code> <code>[L&#x00e4;nge des secrets in Bytes (32)]</code> aufgerufen werden kann und das exploit zur&#x00fc;ckgibt.
 </p>
-'''), 'Length Extension-Angriffe gegen MAC', sessionID)
+      ''' % (
+                self._getCsrfTokenField(sessionID),
+                html.escape(raw_cookie),
+                html.escape(_uc(len(raw_cookie))),
+                html.escape(user),
+                html.escape(timestamp)
+            )), 'Length Extension-Angriffe gegen MAC', sessionID)
         elif reqp.path == '/mac/mac_attack.py':
             fdata = FILES['/mac/mac_attack.py']
             fileBlob = base64.b64decode(fdata['blob_b64'].encode('ascii'))
@@ -627,16 +632,11 @@ Das Skript erwartet, dass im lokalen Verzeichnis eine ausf&#x00fc;hrbare Datei .
 
         title = _uc(title)
         mimeType = _uc('text/html; charset=utf-8')
-        htmlCode = (
-_uc('''<!DOCTYPE html>
+        htmlCode = (_uc('''<!DOCTYPE html>
 <html>
 <head>
-<meta http-equiv="Content-Type" content="''')
-+ html.escape(mimeType) +
-_uc('''"/>
-<title>''')
-+ html.escape(title) +
-_uc('''</title>
+<meta http-equiv="Content-Type" content="%s" />
+<title>%s</title>
 <style type="text/css">
 body {margin: 0; padding: 0 2em;}
 .mainMenu {font-size: 160%;}
@@ -655,11 +655,9 @@ nav>form {display: inline-block;}
 </style>
 </head>
 <body>
-<h1>''')
-+ html.escape(title) +
-_uc('</h1>\n')
-+ htmlContent +
-_uc('''
+<h1>%s</h1>
+%s
+
 <nav>
 <a href="/clientauth/">Client-Side Authorization Check</a>
 <a href="/mac/">MAC Length Extension</a>
@@ -668,13 +666,20 @@ _uc('''
 <a href="/sqlinjection/">SQL Injection</a>
 <a href="/pathtraversal/">Path Traversal</a>
 <span class="sep"></span>
-<form class="reset" method="post" action="/reset">''')
-+ self._getCsrfTokenField(sessionID) +
-_uc('''<input type="submit" value="clear data" />
+<form class="reset" method="post" action="/reset">
+%s
+<input type="submit" value="clear data" />
 </form>
 </nav>
 </body>
-</html>'''))
+</html>
+''' % (
+            html.escape(mimeType),
+            html.escape(title),
+            html.escape(title),
+            htmlContent,
+            self._getCsrfTokenField(sessionID)
+        )))
         htmlBytes = htmlCode.encode('utf-8')
 
         self.send_response(200)
