@@ -9,7 +9,6 @@ import bz2
 import hashlib
 import os
 import os.path
-import pickle
 import re
 import struct
 import sqlite3
@@ -20,21 +19,24 @@ import sys
 
 try:
     import json
-except ImportError: # Python <2.6, use trivialjson (https://github.com/phihag/trivialjson):
-    import re
+except ImportError:
+    # Python <2.6, use trivialjson (https://github.com/phihag/trivialjson):
     class json(object):
         @staticmethod
         def loads(s):
             s = s.decode('UTF-8')
-            def raiseError(msg, i):
+
+            def raise_error(msg, i):
                 raise ValueError(msg + ' at position ' + str(i) + ' of ' + repr(s) + ': ' + repr(s[i:]))
-            def skipSpace(i, expectMore=True):
+
+            def skip_space(i, expect_more=True):
                 while i < len(s) and s[i] in ' \t\r\n':
                     i += 1
-                if expectMore:
+                if expect_more:
                     if i >= len(s):
-                        raiseError('Premature end', i)
+                        raise_error('Premature end', i)
                 return i
+
             def decodeEscape(match):
                 esc = match.group(1)
                 _STATIC = {
@@ -50,20 +52,21 @@ except ImportError: # Python <2.6, use trivialjson (https://github.com/phihag/tr
                 if esc in _STATIC:
                     return _STATIC[esc]
                 if esc[0] == 'u':
-                    if len(esc) == 1+4:
+                    if len(esc) == len('u') + 4:
                         return unichr(int(esc[1:5], 16))
                     if len(esc) == 5+6 and esc[5:7] == '\\u':
                         hi = int(esc[1:5], 16)
                         low = int(esc[7:11], 16)
                         return unichr((hi - 0xd800) * 0x400 + low - 0xdc00 + 0x10000)
                 raise ValueError('Unknown escape ' + str(esc))
-            def parseString(i):
+
+            def parse_string(i):
                 i += 1
                 e = i
                 while True:
                     e = s.index('"', e)
                     bslashes = 0
-                    while s[e-bslashes-1] == '\\':
+                    while s[e - bslashes - 1] == '\\':
                         bslashes += 1
                     if bslashes % 2 == 1:
                         e += 1
@@ -71,76 +74,81 @@ except ImportError: # Python <2.6, use trivialjson (https://github.com/phihag/tr
                     break
                 rexp = re.compile(r'\\(u[dD][89aAbB][0-9a-fA-F]{2}\\u[0-9a-fA-F]{4}|u[0-9a-fA-F]{4}|.|$)')
                 stri = rexp.sub(decodeEscape, s[i:e])
-                return (e+1,stri)
+                return (e + 1, stri)
+
             def parseObj(i):
                 i += 1
                 res = {}
-                i = skipSpace(i)
-                if s[i] == '}': # Empty dictionary
-                    return (i+1,res)
+                i = skip_space(i)
+                if s[i] == '}':  # Empty dictionary
+                    return (i + 1, res)
                 while True:
                     if s[i] != '"':
-                        raiseError('Expected a string object key', i)
-                    i,key = parseString(i)
-                    i = skipSpace(i)
+                        raise_error('Expected a string object key', i)
+                    i, key = parse_string(i)
+                    i = skip_space(i)
                     if i >= len(s) or s[i] != ':':
-                        raiseError('Expected a colon', i)
-                    i,val = parse(i+1)
+                        raise_error('Expected a colon', i)
+                    i, val = parse(i + 1)
                     res[key] = val
-                    i = skipSpace(i)
+                    i = skip_space(i)
                     if s[i] == '}':
-                        return (i+1, res)
+                        return (i + 1, res)
                     if s[i] != ',':
-                        raiseError('Expected comma or closing curly brace', i)
-                    i = skipSpace(i+1)
-            def parseArray(i):
+                        raise_error('Expected comma or closing curly brace', i)
+                    i = skip_space(i + 1)
+
+            def parse_array(i):
                 res = []
-                i = skipSpace(i+1)
-                if s[i] == ']': # Empty array
-                    return (i+1,res)
+                i = skip_space(i + 1)
+                if s[i] == ']':  # Empty array
+                    return (i + 1, res)
                 while True:
-                    i,val = parse(i)
+                    i, val = parse(i)
                     res.append(val)
-                    i = skipSpace(i) # Raise exception if premature end
+                    i = skip_space(i)  # Raise exception if premature end
                     if s[i] == ']':
-                        return (i+1, res)
+                        return (i + 1, res)
                     if s[i] != ',':
-                        raiseError('Expected a comma or closing bracket', i)
-                    i = skipSpace(i+1)
-            def parseDiscrete(i):
-                for k,v in {'true': True, 'false': False, 'null': None}.items():
+                        raise_error('Expected a comma or closing bracket', i)
+                    i = skip_space(i + 1)
+
+            def parse_discrete(i):
+                for k, v in {'true': True, 'false': False, 'null': None}.items():
                     if s.startswith(k, i):
-                        return (i+len(k), v)
-                raiseError('Not a boolean (or null)', i)
-            def parseNumber(i):
+                        return (i + len(k), v)
+                raise_error('Not a boolean (or null)', i)
+
+            def parse_number(i):
                 mobj = re.match('^(-?(0|[1-9][0-9]*)(\.[0-9]*)?([eE][+-]?[0-9]+)?)', s[i:])
                 if mobj is None:
-                    raiseError('Not a number', i)
+                    raise_error('Not a number', i)
                 nums = mobj.group(1)
                 if '.' in nums or 'e' in nums or 'E' in nums:
-                    return (i+len(nums), float(nums))
-                return (i+len(nums), int(nums))
-            CHARMAP = {'{': parseObj, '[': parseArray, '"': parseString, 't': parseDiscrete, 'f': parseDiscrete, 'n': parseDiscrete}
+                    return (i + len(nums), float(nums))
+                return (i + len(nums), int(nums))
+            CHARMAP = {'{': parseObj, '[': parse_array, '"': parse_string, 't': parse_discrete, 'f': parse_discrete, 'n': parse_discrete}
+
             def parse(i):
-                i = skipSpace(i)
-                i,res = CHARMAP.get(s[i], parseNumber)(i)
-                i = skipSpace(i, False)
-                return (i,res)
-            i,res = parse(0)
+                i = skip_space(i)
+                i, res = CHARMAP.get(s[i], parse_number)(i)
+                i = skip_space(i, False)
+                return (i, res)
+            i, res = parse(0)
             if i < len(s):
                 raise ValueError('Extra data at end of input (index ' + str(i) + ' of ' + repr(s) + ': ' + repr(s[i:]) + ')')
             return res
 
 try:
-    _uc = unicode # Python 2
+    _uc = unicode  # Python 2
 except NameError:
-    _uc = str # Python 3
+    _uc = str  # Python 3
 
 _b = lambda s: s.encode('ascii')
 
 try:
     compat_bytes = bytes
-except NameError: # Python < 2.6
+except NameError:  # Python < 2.6
     compat_bytes = str
 
 try:
@@ -151,7 +159,7 @@ except ImportError:
 try:
     import Queue
     _queue = Queue.Queue
-except ImportError: # Python 3
+except ImportError:  # Python 3
     import queue
     _queue = queue.Queue
 
@@ -161,28 +169,29 @@ except ImportError:
     from socketserver import ThreadingMixIn
 
 try:
-    from BaseHTTPServer import HTTPServer,BaseHTTPRequestHandler
+    from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 except ImportError:
-    from http.server import HTTPServer,BaseHTTPRequestHandler
+    from http.server import HTTPServer, BaseHTTPRequestHandler
 
 try:
     import urlparse
     _urlparse = urlparse.urlparse
-except ImportError: # Python 3
+except ImportError:  # Python 3
     import urllib.parse
     _urlparse = urllib.parse.urlparse
 
 try:
     from urllib.parse import urlencode
-except ImportError: # Python <3
+except ImportError:  # Python <3
     from urllib import urlencode
 
 try:
     import html
     html.escape
-except (ImportError,AttributeError): # Python < 3.2
+except (ImportError, AttributeError):  # Python < 3.2
     _escape_map = {ord('&'): _uc('&amp;'), ord('<'): _uc('&lt;'), ord('>'): _uc('&gt;')}
     _escape_map_full = {ord('&'): _uc('&amp;'), ord('<'): _uc('&lt;'), ord('>'): _uc('&gt;'), ord('"'): _uc('&quot;'), ord('\''): _uc('&#x27;')}
+
     class html(object):
         @staticmethod
         def escape(s, quote=True):
@@ -195,6 +204,7 @@ except (ImportError,AttributeError): # Python < 3.2
             if quote:
                 return s.translate(_escape_map_full)
             return s.translate(_escape_map)
+
 
 def query2dict(query):
     """ Raises a ValueError if the input is not valid application/x-www-form-urlencoded bytes """
@@ -213,7 +223,7 @@ def query2dict(query):
     for qel in query.split(_b('&')):
         if len(qel) == 0:
             continue
-        kbin,eq,vbin = qel.partition(_b('='))
+        kbin, eq, vbin = qel.partition(_b('='))
         k = _percentDecode(kbin)
         v = _percentDecode(vbin)
         res[k] = v
@@ -229,6 +239,7 @@ FILES = json.loads(bz2.decompress(base64.b64decode(_FILES_RAW.encode('ascii'))).
 DBDATA = json.loads(bz2.decompress(base64.b64decode(_DBDATA_RAW.encode('ascii'))).decode('UTF-8'))
 FAVICON = base64.b64decode(_FAVICON_RAW.encode('ascii'))
 
+
 class SQLliteManager(threading.Thread):
     """ Makes the thread-unsafe sqlite work with threads """
     def __init__(self):
@@ -241,7 +252,7 @@ class SQLliteManager(threading.Thread):
     def run(self):
         while True:
             conn = sqlite3.connect(":memory:")
-            conn.isolation_level = None # auto-commit
+            conn.isolation_level = None  # auto-commit
             cursor = conn.cursor()
             while True:
                 sql = self._commandq.get()
@@ -252,7 +263,7 @@ class SQLliteManager(threading.Thread):
                     cursor.execute(sql)
                     res = cursor.fetchall()
                 except:
-                    _type,e,_traceback = sys.exc_info()
+                    _type, e, _traceback = sys.exc_info()
                     res = e
                 self._resultq.put(res)
             cursor.close()
@@ -268,6 +279,7 @@ class SQLliteManager(threading.Thread):
             raise res
         return res
 
+
 def _VulnState_locked(f):
     def lockf(self, *args, **kwargs):
         self._lock.acquire()
@@ -276,6 +288,7 @@ def _VulnState_locked(f):
         finally:
             self._lock.release()
     return lockf
+
 
 class VulnState(object):
     def __init__(self):
@@ -321,17 +334,20 @@ class VulnState(object):
 
         # TODO replace this with a Python in-memory database, which takes DBDATA in its constructor (and only needs to be initialized once)
         self._sqlThread.query('_reset_')
-        for tableName,td in DBDATA.items():
-            csql = ('CREATE TABLE ' + tableName + ' (' +
+        for tableName, td in DBDATA.items():
+            csql = (
+                'CREATE TABLE ' + tableName + ' (' +
                 ','.join(col['name'] + ' ' + col['type'] for col in td['structure'])
                 + ')')
             self._sqlThread.query(csql)
             for d in td['data']:
-                dsql = ('INSERT INTO ' + tableName +
-                    ' (' + ','.join(k for k,v in d.items()) + ')' +
-                    ' VALUES(' + ','.join("'" + v.replace("'", "''") + "'" for k,v in d.items()) +
-                ')')
+                dsql = (
+                    'INSERT INTO ' + tableName +
+                    ' (' + ','.join(k for k, v in d.items()) + ')' +
+                    ' VALUES(' + ','.join("'" + v.replace("'", "''") + "'" for k, v in d.items()) +
+                    ')')
                 self._sqlThread.query(dsql)
+
 
 def msgsToHtml(msgs):
     res = (
@@ -348,25 +364,26 @@ _uc('''
     res += _uc('</ul>')
     return res
 
+
 class VulnHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         reqp = _urlparse(self.path)
         try:
-            getParams = query2dict(reqp.query.encode('ascii'))
+            #  getParams = query2dict(reqp.query.encode('ascii'))
             postParams = self._readPostParams()
         except ValueError:
-            _type,e,_traceback = sys.exc_info()
+            _type, e, _traceback = sys.exc_info()
             self.send_error(400, str(e))
             return
         sessionID = self._getSessionID(False)
 
         if reqp.path == '/clientauth/secret':
-            if self._csrfCheck(postParams): # Technically, not a problem here - until log who got the secret or so
+            if self._csrfCheck(postParams):  # Technically, not a problem here - until we're starting to log who knows the secret
                 self._writeHtmlDoc(
                     _uc('<code class="secret">')
                     + html.escape(base64.b16decode('4356452F4D49545245'.encode('ascii')).decode('UTF-8')) +
-                    _uc('</code>')
-                    , 'Geheimnis', sessionID)
+                    _uc('</code>'),
+                    'Geheimnis', sessionID)
         elif reqp.path == '/csrf/send':
             # No CSRF check here, duh
             msg = postParams.get('message', '')
@@ -402,14 +419,13 @@ class VulnHandler(BaseHTTPRequestHandler):
         try:
             getParams = query2dict(reqp.query.encode('ascii'))
         except ValueError:
-            _type,e,_traceback = sys.exc_info()
+            _type, e, _traceback = sys.exc_info()
             self.send_error(400, 'Invalid query format: ' + str(e))
             return
         sessionID = self._getSessionID()
 
         if reqp.path == '/':
-            self._writeHtmlDoc(
-_uc('''
+            self._writeHtmlDoc(_uc('''
 <ol class="mainMenu">
 <li><a href="clientauth/">Client-Side Authorization Check</a></li>
 <li><a href="mac/">MAC Length Extension</a></li>
@@ -419,18 +435,17 @@ _uc('''
 <li><a href="pathtraversal/">Path Traversal</a></li>
 </ol>'''), 'vulnsrv', sessionID)
         elif reqp.path == '/clientauth/':
-            self._writeHtmlDoc(
-_uc('''
+            js_code = html.escape('if (\'you\' != \'admin\') {alert(\'Zugriff verweigert!\'); return false;} else return true;', True)
+            self._writeHtmlDoc(('''
 <p>Finden Sie das Geheimnis heraus!</p>
 
 <form action="secret" method="post">
 <input type="submit" value="Geheimnis herausfinden"
-onclick="''')
-+ html.escape('if (\'you\' != \'admin\') {alert(\'Zugriff verweigert!\'); return false;} else return true;', True) +
-_uc('''" />''')
-+ self._getCsrfTokenField(sessionID) +
-_uc('''</form>
-'''), 'Client-Side Authorization Check', sessionID)
+onclick="%s" />
+%s
+</form>
+''' % js_code, self._getCsrfTokenField(sessionID),
+            'Client-Side Authorization Check', sessionID)
         elif reqp.path == '/csrf/':
             self._writeHtmlDoc(
 _uc('''
@@ -543,9 +558,9 @@ _uc('</ul>'), 'Path Traversal', sessionID)
             cookies = self._readCookies()
             raw_cookie = cookies.get('mac_session')
             if raw_cookie is not None:
-                if isinstance(raw_cookie, compat_bytes): # Python 2.x
+                if isinstance(raw_cookie, compat_bytes):  # Python 2.x
                     raw_cookie = raw_cookie.decode('latin1')
-                mac,_,session_data_str = raw_cookie.rpartition(_uc('!'))
+                mac, _, session_data_str = raw_cookie.rpartition(_uc('!'))
                 session_data = session_data_str.encode('latin1')
                 secret = self.vulnState.macSecret
                 if hashlib.sha256(secret + session_data).hexdigest() == mac:
@@ -686,7 +701,7 @@ _uc('''<input type="submit" value="clear data" />
         if add:
             cookies.update(add)
         c = _cookies.SimpleCookie()
-        for k,v in cookies.items():
+        for k, v in cookies.items():
             assert re.match(r'^[a-zA-Z0-9_-]+$', k)
             c[k] = v
             c[k]['path'] = '/'
@@ -778,6 +793,7 @@ class VulnServer(ThreadingMixIn, HTTPServer):
         addr = (config.get('addr', 'localhost'), config.get('port', 8666))
         HTTPServer.__init__(self, addr, VulnHandler)
 
+
 def main():
     args = sys.argv[1:]
     if len(args) == 0:
@@ -793,6 +809,7 @@ def main():
     except KeyboardInterrupt:
         print('Killed by keyboard interrupt')
         sys.exit(99)
+
 
 def help():
     sys.stdout.write('Usage: ' + sys.argv[0] + ' [configfile]\n')
