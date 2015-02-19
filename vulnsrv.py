@@ -456,7 +456,7 @@ class VulnHandler(BaseHTTPRequestHandler):
     onclick="%s" />
     %s
     </form>
-    ''') % js_code, self._getCsrfTokenField(sessionID),
+    ''') % (js_code, self._getCsrfTokenField(sessionID)),
                 'Client-Side Authorization Check', sessionID)
         elif reqp.path == '/csrf/':
             self._writeHtmlDoc(
@@ -480,6 +480,7 @@ Erstellen Sie eine HTML-Datei <code>evil-xss.html</code>, bei deren Aufruf der a
 
 <form action="send" enctype="application/x-www-form-urlencoded" method="post">
 <input type="text" name="message" autofocus="autofocus" required="required" placeholder="Eine freundliche Nachricht" size="50" />
+%s
 <input type="submit" value="Senden" />
 </form>
 ''') % (_uc(username), self._getCsrfTokenField(sessionID)) + msgsToHtml(self.vulnState.xssMessages), 'XSS', sessionID)
@@ -525,7 +526,7 @@ Erstellen Sie eine HTML-Datei <code>evil-xss.html</code>, bei deren Aufruf der a
 
 <ul>
 %s
-'</ul>''' % fileHtml), 'Path Traversal', sessionID)
+</ul>''' % fileHtml), 'Path Traversal', sessionID)
         elif reqp.path == '/pathtraversal/get':
             fn = '/var/www/img/' + getParams.get('file', '')
             # Resolve the path.
@@ -641,9 +642,9 @@ Das Skript erwartet, dass im lokalen Verzeichnis eine ausf&#x00fc;hrbare Datei .
 <title>%s</title>
 <style type="text/css">
 body {margin: 0; padding: 0 2em;}
-.mainMenu {font-size: 160%;}
+.mainMenu {font-size: 160%%;}
 h1 {text-align: center;}
-.secret{font-size: 180%; /*background: #000;*/}
+.secret{font-size: 180%%; /*background: #000;*/}
 .error {background: #ffd4d4;}
 td[colspan] {text-align: center;}
 nav {position: fixed; left: 0; bottom: 0; padding: 0.5em; background: #eef}
@@ -664,7 +665,7 @@ nav>form {display: inline-block;}
 <a href="/clientauth/">Client-Side Authorization Check</a>
 <a href="/mac/">MAC Length Extension</a>
 <a href="/csrf/">Cross-Site Request Forgery (CSRF)</a>
-<a href="/xss/?username=Benutzer%21">Cross-Site Scripting (XSS)</a>
+<a href="/xss/?username=Benutzer%%21">Cross-Site Scripting (XSS)</a>
 <a href="/sqlinjection/">SQL Injection</a>
 <a href="/pathtraversal/">Path Traversal</a>
 <span class="sep"></span>
