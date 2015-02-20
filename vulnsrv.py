@@ -767,7 +767,7 @@ nav>form {display: inline-block;}
     def _getCsrfTokenField(self, sessionID):
         return _uc('<input type="hidden" name="csrfToken" value="') + html.escape(sessionID) + _uc('" />')
 
-    error_message_format = u"""<!DOCTYPE html>
+    error_message_format = _uc("""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8" />
@@ -779,11 +779,11 @@ nav>form {display: inline-block;}
 <p>Message: %(message)s</p>
 </body>
 </html>
-"""
+""")
     error_content_type = 'text/html; charset=utf-8'
 
-    def send_error(self, code, message=u''):
-        codestr, explain = self.responses.get(code, (str(code), u'Unknown code'))
+    def send_error(self, code, message=_uc('')):
+        codestr, explain = self.responses.get(code, (str(code), _uc('Unknown code')))
         self.log_error("code %d, message %s", code, message)
         content = (self.error_message_format %
                    {'code': code, 'message': html.escape(message),
