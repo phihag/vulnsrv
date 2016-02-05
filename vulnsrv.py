@@ -243,7 +243,7 @@ def query2dict(query):
         res[k] = v
     return res
 
-_FILES_RAW = "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"
+_FILES_RAW = "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"
 
 _DBDATA_RAW = "QlpoOTFBWSZTWbHfiOgAAMGfgFCEABAq73xqP//+qjAA+WMNUxNAAAGgAaAANKYDQoyejSAAGgM1AlNKaRpoANAA0HqaHqGkGGgwJqs3mYlZcjGvRZKmFNA2DeSnk/ejxOkJxDs52efOMfkIZMJkBHGldvX6YaWimKrRnZgrIvbYUYXHsJBniC6LaEyXOkMpVCwMQpxALwYIEqm1KEDcN+JxCn1YYfWMQaDDXQyKBIoMqMxZfHQsF3CxnsUCrErVrzNCZwm2cn3JUiJVHExUCTMLSSO0TTS9Pr8RueRHnCUWKFoi2twKQJgrfRok6cEtJt19zLGAA0Et1rgkQAm9fxdyRThQkLHfiOg="
 
@@ -252,6 +252,14 @@ _FAVICON_RAW = "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhk
 FILES = json.loads(bz2.decompress(base64.b64decode(_FILES_RAW.encode('ascii'))).decode('UTF-8'))
 DBDATA = json.loads(bz2.decompress(base64.b64decode(_DBDATA_RAW.encode('ascii'))).decode('UTF-8'))
 FAVICON = base64.b64decode(_FAVICON_RAW.encode('ascii'))
+
+# Some of these headers allow attacks, do not copy for use outside of vulnsrv!
+DEFAULT_HEADERS = [
+    ('X-Frame-Options', 'DENY'),
+    ('X-XSS-Protection', '0'),
+    ('Cache-Control', 'private, max-age=0, no-cache'),
+    ('Pragma', 'no-cache'),
+]
 
 
 class SQLliteManager(threading.Thread):
@@ -322,13 +330,26 @@ class VulnState(object):
         return res
 
     @_VulnState_locked
-    def xssMessage(self, msg):
-        self._xssMessages.append(msg)
+    def reflected_xss_message(self, msg):
+        self._reflected_xss_messages.append(msg)
 
     @property
     @_VulnState_locked
-    def xssMessages(self):
-        return self._xssMessages[:]
+    def reflected_xss_messages(self):
+        return self._reflected_xss_messages[:]
+
+    @_VulnState_locked
+    def stored_xss_message(self, msg):
+        self._stored_xss_messages.append(msg)
+
+    @_VulnState_locked
+    def remove_stored_xss_messages(self):
+        self._stored_xss_messages = []
+
+    @property
+    @_VulnState_locked
+    def stored_xss_messages(self):
+        return self._stored_xss_messages[:]
 
     @_VulnState_locked
     def sqlQuery(self, sql):
@@ -342,7 +363,8 @@ class VulnState(object):
     @_VulnState_locked
     def reset(self):
         self._csrfMessages = []
-        self._xssMessages = []
+        self._reflected_xss_messages = []
+        self._stored_xss_messages = []
         self._macSecret = hashlib.md5(os.urandom(32)).hexdigest().encode('ascii')
         assert len(self._macSecret) == 32
 
@@ -404,14 +426,26 @@ class VulnHandler(BaseHTTPRequestHandler):
             else:
                 self.vulnState.csrfMessage(msg)
                 self._redirect('/csrf/')
-        elif reqp.path == '/xss/send':
+        elif reqp.path == '/reflected_xss/send':
             if self._csrfCheck(postParams):
                 msg = postParams.get('message', '')
                 if msg == '':
                     self.send_error(400, 'Missing or empty message')
                 else:
-                    self.vulnState.xssMessage(msg)
-                    self._redirect('/xss/?username=Sender%2C')
+                    self.vulnState.reflected_xss_message(msg)
+                    self._redirect('/reflected_xss/?username=Sender%2C')
+        elif reqp.path == '/stored_xss/send':
+            if self._csrfCheck(postParams):
+                msg = postParams.get('message', '')
+                if msg == '':
+                    self.send_error(400, 'Missing or empty message')
+                else:
+                    self.vulnState.stored_xss_message(msg)
+                    self._redirect('/stored_xss/')
+        elif reqp.path == '/stored_xss/clear':
+            if self._csrfCheck(postParams):
+                self.vulnState.remove_stored_xss_messages()
+                self._redirect('/stored_xss/')
         elif reqp.path == '/mac/login':
             if self._csrfCheck(postParams):
                 val = _uc('user=Gast&time=' + str(int(time.time())))
@@ -442,7 +476,8 @@ class VulnHandler(BaseHTTPRequestHandler):
 <li><a href="clientauth/">Client-Side Authorization Check</a></li>
 <li><a href="mac/">MAC Length Extension</a></li>
 <li><a href="csrf/">Cross-Site Request Forgery (CSRF)</a></li>
-<li><a href="xss/?username=Benutzer%21">Cross-Site Scripting (XSS)</a></li>
+<li><a href="reflected_xss/?username=Benutzer%21">Reflected Cross-Site Scripting (XSS)</a></li>
+<li><a href="stored_xss/?username=Benutzer%21">Stored Cross-Site Scripting (XSS)</a></li>
 <li><a href="sqlinjection/">SQL Injection</a></li>
 <li><a href="pathtraversal/">Path Traversal</a></li>
 </ol>'''), 'vulnsrv', sessionID)
@@ -471,12 +506,12 @@ Erstellen Sie eine HTML-Datei <code>evil-csrf.html</code>, bei deren Aufruf der 
 <input type="submit" value="Senden" />
 </form>
 ''') + msgsToHtml(self.vulnState.csrfMessages), 'CSRF', sessionID)
-        elif reqp.path == '/xss/':
+        elif reqp.path == '/reflected_xss/':
             username = getParams.get('username', 'Unbekannter')
             self._writeHtmlDoc(_uc(
                 '''<div>Hallo %s</div>
 <p>Das untenstehende Formular ist gegen Cross-Site Request Forgery gesch&uuml;tzt.
-Erstellen Sie eine HTML-Datei <code>evil-xss.html</code>, bei deren Aufruf der arglose Benutzer hier trotzdem unfreiwillig eine &uuml;belgesinnte Nachricht hinterl&auml;sst.
+Erstellen Sie eine HTML-Datei <code>evil-reflected-xss.html</code>, bei deren Aufruf der arglose Benutzer hier trotzdem unfreiwillig eine &uuml;belgesinnte Nachricht hinterl&auml;sst.
 </p>
 
 <form action="send" enctype="application/x-www-form-urlencoded" method="post">
@@ -484,7 +519,78 @@ Erstellen Sie eine HTML-Datei <code>evil-xss.html</code>, bei deren Aufruf der a
 %s
 <input type="submit" value="Senden" />
 </form>
-''') % (_uc(username), self._getCsrfTokenField(sessionID)) + msgsToHtml(self.vulnState.xssMessages), 'XSS', sessionID)
+''') % (_uc(username), self._getCsrfTokenField(sessionID)) + msgsToHtml(self.vulnState.reflected_xss_messages), 'Reflected XSS', sessionID)
+        elif reqp.path == '/stored_xss/':
+            self._writeHtmlDoc(_uc(
+                '''<div>Hallo <span class="userid">%s</span></div>
+<p>Das untenstehende Formular ist gegen Cross-Site Request Forgery gesch&uuml;tzt.
+Sorgen Sie daf&uuml;r, dass jeder Benutzer der diese Seite aufruft unfreiwillig eine Nachricht hinterl&auml;sst, die IP und Port des Benutzers beinhaltet.
+</p>
+
+<form action="send" enctype="application/x-www-form-urlencoded" method="post">
+<input type="text" name="message" autocomplete="off" autofocus="autofocus" required="required" placeholder="Eine freundliche Nachricht" size="50" />
+%s
+<input type="submit" value="Senden" />
+</form>
+%s
+
+<script>
+function show(messages_json) {
+    var messages = JSON.parse(messages_json);
+    var list = document.querySelector('.messages');
+    messages.forEach(function(m) {
+        var li = document.createElement('li');
+        li.appendChild(document.createTextNode(m));
+        list.appendChild(li);
+    });
+}
+
+function download() {
+    var xhr = new XMLHttpRequest();
+    xhr.dataType = 'text';
+    xhr.onload = function(e) {
+        show(xhr.responseText);
+    };
+    xhr.open('GET', 'json');
+    xhr.send();
+}
+
+function send(msg) {
+    var xhr = new XMLHttpRequest();
+    var token = document.querySelector('input[name="csrfToken"]').value;
+    var params = 'csrfToken=' + encodeURIComponent(token) + '&message=' +encodeURIComponent(msg);
+    xhr.open('POST', 'send');
+    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.send(params);
+
+}
+
+function user() {
+    return document.querySelector('.userid').textContent;
+}
+</script>
+
+<script>
+// JSON direkt einbinden
+var messages_json = '%s';
+show(messages_json);
+
+// Vorheriger Code:
+// download();
+
+</script>
+
+<form action="clear" enctype="application/x-www-form-urlencoded" method="post">
+%s
+<button role="submit">Alle Nachrichten l&ouml;schen</button
+</form>
+
+''') % (
+            _uc(':').join(map(_uc, self.client_address)),
+            self._getCsrfTokenField(sessionID),
+            msgsToHtml([]),
+            json.dumps(self.vulnState.stored_xss_messages),
+            self._getCsrfTokenField(sessionID)), 'Stored XSS', sessionID)
         elif reqp.path == '/sqlinjection/':
             webMessages = self.vulnState.sqlQuery("SELECT id,msg FROM messages WHERE user='web'")
             self._writeHtmlDoc(_uc('''
@@ -622,17 +728,14 @@ Das Skript erwartet, dass im lokalen Verzeichnis eine ausf&#x00fc;hrbare Datei .
             self.send_header('Content-Length', str(len(FAVICON)))
             self.end_headers()
             self.wfile.write(FAVICON)
+        elif reqp.path == '/stored_xss/json':
+            self._write_json(self.vulnState.stored_xss_messages)
         else:
             self.send_error(404)
 
     def _writeHtmlDoc(self, htmlContent, title, sessionID, add_headers=None):
         if add_headers is None:
-            add_headers = [
-                ('X-Frame-Options', 'DENY'),
-                ('X-XSS-Protection', '0'),
-                ('Cache-Control', 'private, max-age=0, no-cache'),
-                ('Pragma', 'no-cache'),
-            ]
+            add_headers = DEFAULT_HEADERS
 
         title = _uc(title)
         mimeType = _uc('text/html; charset=utf-8')
@@ -666,7 +769,8 @@ nav>form {display: inline-block;}
 <a href="/clientauth/">Client-Side Authorization Check</a>
 <a href="/mac/">MAC Length Extension</a>
 <a href="/csrf/">Cross-Site Request Forgery (CSRF)</a>
-<a href="/xss/?username=Benutzer%%21">Cross-Site Scripting (XSS)</a>
+<a href="/reflected_xss/?username=Benutzer%%21">Reflected XSS</a>
+<a href="/stored_xss/"">Stored XSS</a>
 <a href="/sqlinjection/">SQL Injection</a>
 <a href="/pathtraversal/">Path Traversal</a>
 <span class="sep"></span>
@@ -695,6 +799,19 @@ nav>form {display: inline-block;}
         self.end_headers()
 
         self.wfile.write(htmlBytes)
+
+    def _write_json(self, data):
+        json_bytes = json.dumps(data).encode('utf-8')
+
+        self.send_response(200)
+        self._writeCookies()
+        self.send_header('Content-Length', str(len(json_bytes)))
+        self.send_header('Content-Type', 'application/json')
+        for k, v in DEFAULT_HEADERS:
+            self.send_header(k, v)
+        self.end_headers()
+
+        self.wfile.write(json_bytes)
 
     def _redirect(self, target, cookieData=None):
         self.send_response(302)
