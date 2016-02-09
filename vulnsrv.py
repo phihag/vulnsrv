@@ -585,12 +585,7 @@ show(messages_json);
 <button role="submit">Alle Nachrichten l&ouml;schen</button
 </form>
 
-''') % (
-            _uc(':').join(map(_uc, self.client_address)),
-            self._getCsrfTokenField(sessionID),
-            msgsToHtml([]),
-            json.dumps(self.vulnState.stored_xss_messages),
-            self._getCsrfTokenField(sessionID)), 'Stored XSS', sessionID)
+''') % (_uc(':').join(map(_uc, self.client_address)), self._getCsrfTokenField(sessionID), msgsToHtml([]), json.dumps(self.vulnState.stored_xss_messages), self._getCsrfTokenField(sessionID)), 'Stored XSS', sessionID)
         elif reqp.path == '/sqlinjection/':
             webMessages = self.vulnState.sqlQuery("SELECT id,msg FROM messages WHERE user='web'")
             self._writeHtmlDoc(_uc('''
